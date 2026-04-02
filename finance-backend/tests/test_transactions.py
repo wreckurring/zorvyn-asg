@@ -31,7 +31,9 @@ def test_list_transactions(client):
     client.post("/transactions", json=BASE_TXN, headers=auth_headers(token))
     resp = client.get("/transactions", headers=auth_headers(token))
     assert resp.status_code == 200
-    assert len(resp.json()) == 1
+    body = resp.json()
+    assert body["total"] == 1
+    assert len(body["results"]) == 1
 
 
 def test_filter_by_type(client):
@@ -39,7 +41,7 @@ def test_filter_by_type(client):
     client.post("/transactions", json=BASE_TXN, headers=auth_headers(token))
     client.post("/transactions", json={**BASE_TXN, "type": "expense", "category": "Rent"}, headers=auth_headers(token))
     resp = client.get("/transactions?type=income", headers=auth_headers(token))
-    assert all(t["type"] == "income" for t in resp.json())
+    assert all(t["type"] == "income" for t in resp.json()["results"])
 
 
 def test_filter_by_category(client):
@@ -47,7 +49,7 @@ def test_filter_by_category(client):
     client.post("/transactions", json=BASE_TXN, headers=auth_headers(token))
     client.post("/transactions", json={**BASE_TXN, "category": "Groceries"}, headers=auth_headers(token))
     resp = client.get("/transactions?category=Consulting", headers=auth_headers(token))
-    assert all("Consulting" in t["category"] for t in resp.json())
+    assert all("Consulting" in t["category"] for t in resp.json()["results"])
 
 
 def test_update_transaction(client):
@@ -63,7 +65,7 @@ def test_soft_delete_hides_transaction(client):
     txn = client.post("/transactions", json=BASE_TXN, headers=auth_headers(token)).json()
     client.delete(f"/transactions/{txn['id']}", headers=auth_headers(token))
     resp = client.get("/transactions", headers=auth_headers(token))
-    assert all(t["id"] != txn["id"] for t in resp.json())
+    assert resp.json()["total"] == 0
 
 
 def test_update_nonexistent_transaction(client):
@@ -83,4 +85,35 @@ def test_pagination(client):
     for i in range(5):
         client.post("/transactions", json={**BASE_TXN, "category": f"Cat{i}"}, headers=auth_headers(token))
     resp = client.get("/transactions?limit=2&skip=0", headers=auth_headers(token))
-    assert len(resp.json()) == 2
+    body = resp.json()
+    assert len(body["results"]) == 2
+    assert body["total"] == 5
+
+
+def test_get_single_transaction(client):
+    token = _admin_client(client)
+    txn = client.post("/transactions", json=BASE_TXN, headers=auth_headers(token)).json()
+    resp = client.get(f"/transactions/{txn['id']}", headers=auth_headers(token))
+    assert resp.status_code == 200
+    assert resp.json()["id"] == txn["id"]
+
+
+def test_get_single_transaction_not_found(client):
+    token = _admin_client(client)
+    resp = client.get("/transactions/9999", headers=auth_headers(token))
+    assert resp.status_code == 404
+
+
+def test_invalid_date_range_rejected(client):
+    token = _admin_client(client)
+    resp = client.get("/transactions?date_from=2024-06-01&date_to=2024-01-01", headers=auth_headers(token))
+    assert resp.status_code == 400
+
+
+def test_validation_error_format(client):
+    token = _admin_client(client)
+    resp = client.post("/transactions", json={"amount": -10, "type": "invalid"}, headers=auth_headers(token))
+    assert resp.status_code == 422
+    body = resp.json()
+    assert "errors" in body
+    assert "detail" in body

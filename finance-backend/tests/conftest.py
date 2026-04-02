@@ -12,6 +12,17 @@ from app.database import Base, get_db
 from app.main import app
 
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
+_base_url, _test_db_name = TEST_DATABASE_URL.rsplit("/", 1)
+_admin_url = f"{_base_url}/postgres"
+
+_admin_engine = create_engine(_admin_url, isolation_level="AUTOCOMMIT")
+with _admin_engine.connect() as conn:
+    exists = conn.execute(
+        text(f"SELECT 1 FROM pg_database WHERE datname = '{_test_db_name}'")
+    ).fetchone()
+    if not exists:
+        conn.execute(text(f"CREATE DATABASE {_test_db_name}"))
+_admin_engine.dispose()
 
 engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

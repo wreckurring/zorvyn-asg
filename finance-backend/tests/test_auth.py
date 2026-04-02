@@ -45,6 +45,21 @@ def test_login_unknown_user(client):
     assert resp.status_code == 401
 
 
+def test_me_returns_current_user(client):
+    register_user(client, "alice", "securepass")
+    token = login_user(client, "alice", "securepass")
+    resp = client.get("/auth/me", headers=auth_headers(token))
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["username"] == "alice"
+    assert data["role"] == "viewer"
+
+
+def test_me_invalid_token(client):
+    resp = client.get("/auth/me", headers={"Authorization": "Bearer invalid"})
+    assert resp.status_code == 401
+
+
 def test_protected_route_no_token(client):
     resp = client.get("/transactions")
     assert resp.status_code == 403

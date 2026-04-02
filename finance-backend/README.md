@@ -129,12 +129,14 @@ API docs available at: `http://localhost:8000/docs`
 |---|---|---|
 | POST | `/auth/register` | Register a new user |
 | POST | `/auth/login` | Login and receive JWT |
+| GET | `/auth/me` | Get current user profile |
 
 ### Users (Admin only)
 
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/users` | List all users |
+| GET | `/users/{id}` | Get a single user |
 | POST | `/users` | Create a user |
 | PATCH | `/users/{id}/role` | Change a user's role |
 | PATCH | `/users/{id}/status` | Activate or deactivate a user |
@@ -144,6 +146,7 @@ API docs available at: `http://localhost:8000/docs`
 | Method | Endpoint | Description | Roles |
 |---|---|---|---|
 | GET | `/transactions` | List transactions (filterable) | All |
+| GET | `/transactions/{id}` | Get a single transaction | All |
 | POST | `/transactions` | Create a transaction | Analyst, Admin |
 | PUT | `/transactions/{id}` | Update a transaction | Admin |
 | DELETE | `/transactions/{id}` | Soft delete a transaction | Admin |
@@ -154,13 +157,19 @@ API docs available at: `http://localhost:8000/docs`
 - `date_from` / `date_to` — ISO date range
 - `skip` / `limit` — pagination
 
+**Response shape:**
+```json
+{ "total": 42, "skip": 0, "limit": 50, "results": [...] }
+```
+
 ### Dashboard
 
 | Method | Endpoint | Description | Roles |
 |---|---|---|---|
 | GET | `/dashboard/summary` | Total income, expenses, net balance | All |
 | GET | `/dashboard/by-category` | Totals grouped by category | All |
-| GET | `/dashboard/trends` | Monthly income vs expense breakdown | All |
+| GET | `/dashboard/trends/monthly` | Monthly income vs expense breakdown | All |
+| GET | `/dashboard/trends/weekly` | Weekly income vs expense breakdown | All |
 | GET | `/dashboard/recent` | Last N transactions (`?limit=10`) | All |
 
 ---

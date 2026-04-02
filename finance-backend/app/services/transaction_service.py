@@ -6,17 +6,14 @@ from app.models.transaction import Transaction, TransactionType
 from app.schemas.transaction import TransactionCreate, TransactionUpdate
 
 
-def get_transactions(
+def _build_transaction_query(
     db: Session,
-    type: TransactionType | None = None,
-    category: str | None = None,
-    date_from: date | None = None,
-    date_to: date | None = None,
-    skip: int = 0,
-    limit: int = 50,
-) -> list[Transaction]:
+    type: TransactionType | None,
+    category: str | None,
+    date_from: date | None,
+    date_to: date | None,
+):
     query = db.query(Transaction).filter(Transaction.is_deleted == False)
-
     if type:
         query = query.filter(Transaction.type == type)
     if category:
@@ -25,8 +22,22 @@ def get_transactions(
         query = query.filter(Transaction.date >= date_from)
     if date_to:
         query = query.filter(Transaction.date <= date_to)
+    return query
 
-    return query.order_by(Transaction.date.desc()).offset(skip).limit(limit).all()
+
+def get_transactions(
+    db: Session,
+    type: TransactionType | None = None,
+    category: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    skip: int = 0,
+    limit: int = 50,
+) -> tuple[int, list[Transaction]]:
+    query = _build_transaction_query(db, type, category, date_from, date_to)
+    total = query.count()
+    results = query.order_by(Transaction.date.desc()).offset(skip).limit(limit).all()
+    return total, results
 
 
 def get_transaction_by_id(db: Session, transaction_id: int) -> Transaction | None:

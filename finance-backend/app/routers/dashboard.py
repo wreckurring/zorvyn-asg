@@ -10,6 +10,7 @@ from app.services.dashboard_service import (
     get_monthly_trends,
     get_recent_transactions,
     get_summary,
+    get_weekly_trends,
 )
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
@@ -31,12 +32,20 @@ def by_category(
     return get_by_category(db)
 
 
-@router.get("/trends")
-def trends(
+@router.get("/trends/monthly")
+def monthly_trends(
     db: Session = Depends(get_db),
     _: User = Depends(require_any_role),
 ):
     return get_monthly_trends(db)
+
+
+@router.get("/trends/weekly")
+def weekly_trends(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_any_role),
+):
+    return get_weekly_trends(db)
 
 
 @router.get("/recent", response_model=list[TransactionResponse])

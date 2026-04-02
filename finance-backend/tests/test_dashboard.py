@@ -42,13 +42,22 @@ def test_by_category(client):
     assert "Rent" in categories
 
 
-def test_trends(client):
+def test_monthly_trends(client):
     token = _admin_token(client)
     client.post("/transactions", json=INCOME, headers=auth_headers(token))
-    resp = client.get("/dashboard/trends", headers=auth_headers(token))
+    resp = client.get("/dashboard/trends/monthly", headers=auth_headers(token))
     assert resp.status_code == 200
     assert len(resp.json()) >= 1
-    assert "month" in resp.json()[0]
+    assert "period" in resp.json()[0]
+
+
+def test_weekly_trends(client):
+    token = _admin_token(client)
+    client.post("/transactions", json=INCOME, headers=auth_headers(token))
+    resp = client.get("/dashboard/trends/weekly", headers=auth_headers(token))
+    assert resp.status_code == 200
+    assert len(resp.json()) >= 1
+    assert "period" in resp.json()[0]
 
 
 def test_recent(client):

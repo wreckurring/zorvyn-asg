@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.middleware.access_control import require_admin
+from app.middleware.access_control import get_current_user, require_admin
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, UserRoleUpdate, UserStatusUpdate
 from app.services.user_service import (
@@ -24,6 +24,18 @@ def list_users(
     _: User = Depends(require_admin),
 ):
     return get_all_users(db)
+
+
+@router.get("/{user_id}", response_model=UserResponse)
+def get_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
 
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -57,8 +69,14 @@ def change_user_status(
     user_id: int,
     data: UserStatusUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     _: User = Depends(require_admin),
 ):
+    if user_id == current_user.id and not data.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot deactivate your own account",
+        )
     user = get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

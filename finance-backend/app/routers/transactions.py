@@ -7,7 +7,12 @@ from app.database import get_db
 from app.middleware.access_control import require_admin, require_analyst_or_admin, require_any_role
 from app.models.transaction import TransactionType
 from app.models.user import User
-from app.schemas.transaction import TransactionCreate, TransactionResponse, TransactionUpdate
+from app.schemas.transaction import (
+    PaginatedTransactions,
+    TransactionCreate,
+    TransactionResponse,
+    TransactionUpdate,
+)
 from app.services.transaction_service import (
     create_transaction,
     get_transaction_by_id,
@@ -19,7 +24,7 @@ from app.services.transaction_service import (
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
 
-@router.get("", response_model=list[TransactionResponse])
+@router.get("", response_model=PaginatedTransactions)
 def list_transactions(
     type: TransactionType | None = Query(None),
     category: str | None = Query(None),
@@ -30,7 +35,27 @@ def list_transactions(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_role),
 ):
-    return get_transactions(db, type=type, category=category, date_from=date_from, date_to=date_to, skip=skip, limit=limit)
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="date_from must not be after date_to",
+        )
+    total, results = get_transactions(
+        db, type=type, category=category, date_from=date_from, date_to=date_to, skip=skip, limit=limit
+    )
+    return PaginatedTransactions(total=total, skip=skip, limit=limit, results=results)
+
+
+@router.get("/{transaction_id}", response_model=TransactionResponse)
+def get_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_any_role),
+):
+    txn = get_transaction_by_id(db, transaction_id)
+    if not txn:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
+    return txn
 
 
 @router.post("", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)

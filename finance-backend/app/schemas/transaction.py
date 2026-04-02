@@ -65,3 +65,10 @@ class TransactionFilters(BaseModel):
     category: Optional[str] = None
     date_from: Optional[DateType] = None
     date_to: Optional[DateType] = None
+
+
+class PaginatedTransactions(BaseModel):
+    total: int
+    skip: int
+    limit: int
+    results: list[TransactionResponse]
