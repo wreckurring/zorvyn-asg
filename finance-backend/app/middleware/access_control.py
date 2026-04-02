@@ -34,8 +34,6 @@ def get_current_user(
 
 
 def require_roles(*roles: UserRole):
-    """Dependency factory — restricts access to the given roles."""
-
     def _check(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in roles:
             raise HTTPException(
@@ -47,7 +45,6 @@ def require_roles(*roles: UserRole):
     return _check
 
 
-# Convenience dependencies
 require_admin = require_roles(UserRole.admin)
 require_analyst_or_admin = require_roles(UserRole.analyst, UserRole.admin)
 require_any_role = require_roles(UserRole.viewer, UserRole.analyst, UserRole.admin)

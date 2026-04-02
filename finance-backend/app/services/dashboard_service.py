@@ -1,5 +1,4 @@
 from collections import defaultdict
-from datetime import date, timedelta
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -42,12 +41,10 @@ def get_by_category(db: Session) -> list[dict]:
 
 
 def get_monthly_trends(db: Session) -> list[dict]:
+    month_label = func.to_char(Transaction.date, "YYYY-MM").label("month")
+
     rows = (
-        db.query(
-            func.strftime("%Y-%m", Transaction.date).label("month"),
-            Transaction.type,
-            func.sum(Transaction.amount),
-        )
+        db.query(month_label, Transaction.type, func.sum(Transaction.amount))
         .filter(Transaction.is_deleted == False)
         .group_by("month", Transaction.type)
         .order_by("month")

@@ -1,12 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.database import Base, engine
 from app.routers import auth, dashboard, transactions, users
-
-# Create all tables on startup
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.app_name,
@@ -26,6 +23,14 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(transactions.router)
 app.include_router(dashboard.router)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred"},
+    )
 
 
 @app.get("/", tags=["Health"])
