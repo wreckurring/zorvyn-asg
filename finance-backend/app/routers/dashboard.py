@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Query
+from datetime import date
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -18,10 +20,17 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 @router.get("/summary")
 def summary(
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
     db: Session = Depends(get_db),
     _: User = Depends(require_any_role),
 ):
-    return get_summary(db)
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="date_from must not be after date_to",
+        )
+    return get_summary(db, date_from=date_from, date_to=date_to)
 
 
 @router.get("/by-category")

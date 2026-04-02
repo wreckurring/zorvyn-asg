@@ -1,4 +1,6 @@
 from collections import defaultdict
+from datetime import date
+from typing import Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -6,14 +8,19 @@ from sqlalchemy.orm import Session
 from app.models.transaction import Transaction, TransactionType
 
 
-def get_summary(db: Session) -> dict:
-    rows = (
-        db.query(Transaction.type, func.sum(Transaction.amount))
-        .filter(Transaction.is_deleted == False)
-        .group_by(Transaction.type)
-        .all()
-    )
+def get_summary(
+    db: Session,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+) -> dict:
+    query = db.query(Transaction.type, func.sum(Transaction.amount)).filter(Transaction.is_deleted == False)
 
+    if date_from:
+        query = query.filter(Transaction.date >= date_from)
+    if date_to:
+        query = query.filter(Transaction.date <= date_to)
+
+    rows = query.group_by(Transaction.type).all()
     totals = {row[0]: row[1] for row in rows}
     income = totals.get(TransactionType.income, 0.0)
     expenses = totals.get(TransactionType.expense, 0.0)

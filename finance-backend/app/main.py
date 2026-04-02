@@ -2,8 +2,14 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
+from app.database import SessionLocal
+from app.limiter import limiter
+from app.middleware.logging import RequestLoggingMiddleware
 from app.routers import auth, dashboard, transactions, users
 
 app = FastAPI(
@@ -12,6 +18,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -47,5 +58,18 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 @app.get("/", tags=["Health"])
-def root():
-    return {"status": "ok", "message": "Finance Dashboard API is running"}
+def health_check():
+    try:
+        db = SessionLocal()
+        db.execute(__import__("sqlalchemy").text("SELECT 1"))
+        db_status = "connected"
+    except Exception:
+        db_status = "unavailable"
+    finally:
+        db.close()
+
+    return {
+        "status": "ok",
+        "version": "1.0.0",
+        "database": db_status,
+    }

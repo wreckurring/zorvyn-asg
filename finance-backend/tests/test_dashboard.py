@@ -77,3 +77,18 @@ def test_viewer_can_access_dashboard(client):
     viewer_token = login_user(client, "viewer", "viewerpass")
     resp = client.get("/dashboard/summary", headers=auth_headers(viewer_token))
     assert resp.status_code == 200
+
+
+def test_summary_with_date_filter(client):
+    token = _admin_token(client)
+    client.post("/transactions", json=INCOME, headers=auth_headers(token))
+    client.post("/transactions", json={**INCOME, "date": "2024-06-15", "amount": 1000.0}, headers=auth_headers(token))
+    resp = client.get("/dashboard/summary?date_from=2024-06-01&date_to=2024-06-30", headers=auth_headers(token))
+    assert resp.status_code == 200
+    assert resp.json()["total_income"] == 1000.0
+
+
+def test_summary_invalid_date_range(client):
+    token = _admin_token(client)
+    resp = client.get("/dashboard/summary?date_from=2024-06-01&date_to=2024-01-01", headers=auth_headers(token))
+    assert resp.status_code == 400

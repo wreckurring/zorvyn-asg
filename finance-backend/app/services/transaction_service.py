@@ -40,6 +40,20 @@ def get_transactions(
     return total, results
 
 
+def get_all_transactions_for_export(
+    db: Session,
+    type: TransactionType | None = None,
+    category: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> list[Transaction]:
+    return (
+        _build_transaction_query(db, type, category, date_from, date_to)
+        .order_by(Transaction.date.desc())
+        .all()
+    )
+
+
 def get_transaction_by_id(db: Session, transaction_id: int) -> Transaction | None:
     return (
         db.query(Transaction)

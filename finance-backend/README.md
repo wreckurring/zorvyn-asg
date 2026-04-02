@@ -127,9 +127,10 @@ API docs available at: `http://localhost:8000/docs`
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/auth/register` | Register a new user |
-| POST | `/auth/login` | Login and receive JWT |
+| POST | `/auth/register` | Register a new user (rate limited: 10/min) |
+| POST | `/auth/login` | Login and receive JWT (rate limited: 20/min) |
 | GET | `/auth/me` | Get current user profile |
+| PATCH | `/auth/me` | Update own email or password |
 
 ### Users (Admin only)
 
@@ -145,7 +146,8 @@ API docs available at: `http://localhost:8000/docs`
 
 | Method | Endpoint | Description | Roles |
 |---|---|---|---|
-| GET | `/transactions` | List transactions (filterable) | All |
+| GET | `/transactions` | List transactions (filterable, paginated) | All |
+| GET | `/transactions/export` | Download filtered transactions as CSV | All |
 | GET | `/transactions/{id}` | Get a single transaction | All |
 | POST | `/transactions` | Create a transaction | Analyst, Admin |
 | PUT | `/transactions/{id}` | Update a transaction | Admin |
@@ -166,7 +168,7 @@ API docs available at: `http://localhost:8000/docs`
 
 | Method | Endpoint | Description | Roles |
 |---|---|---|---|
-| GET | `/dashboard/summary` | Total income, expenses, net balance | All |
+| GET | `/dashboard/summary` | Total income, expenses, net balance (supports `?date_from` / `?date_to`) | All |
 | GET | `/dashboard/by-category` | Totals grouped by category | All |
 | GET | `/dashboard/trends/monthly` | Monthly income vs expense breakdown | All |
 | GET | `/dashboard/trends/weekly` | Weekly income vs expense breakdown | All |

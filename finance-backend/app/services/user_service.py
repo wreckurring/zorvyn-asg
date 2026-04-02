@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 
 from app.models.user import User, UserRole
-from app.schemas.user import UserCreate
-from app.services.auth_service import hash_password
+from app.schemas.user import UserCreate, UserProfileUpdate
+from app.services.auth_service import hash_password, verify_password
 
 
 def get_user_by_username(db: Session, username: str) -> User | None:
@@ -46,3 +46,21 @@ def update_user_status(db: Session, user: User, is_active: bool) -> User:
     db.commit()
     db.refresh(user)
     return user
+
+
+def update_user_profile(db: Session, user: User, data: UserProfileUpdate) -> tuple[User, str | None]:
+    error = None
+
+    if data.new_password:
+        if not data.current_password:
+            return user, "current_password is required to set a new password"
+        if not verify_password(data.current_password, user.hashed_password):
+            return user, "Current password is incorrect"
+        user.hashed_password = hash_password(data.new_password)
+
+    if data.email:
+        user.email = data.email
+
+    db.commit()
+    db.refresh(user)
+    return user, error

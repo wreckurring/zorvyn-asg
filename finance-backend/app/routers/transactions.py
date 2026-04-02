@@ -1,6 +1,9 @@
+import csv
+import io
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -15,6 +18,7 @@ from app.schemas.transaction import (
 )
 from app.services.transaction_service import (
     create_transaction,
+    get_all_transactions_for_export,
     get_transaction_by_id,
     get_transactions,
     soft_delete_transaction,
@@ -22,6 +26,37 @@ from app.services.transaction_service import (
 )
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
+
+
+@router.get("/export")
+def export_csv(
+    type: TransactionType | None = Query(None),
+    category: str | None = Query(None),
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_any_role),
+):
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="date_from must not be after date_to",
+        )
+
+    rows = get_all_transactions_for_export(db, type=type, category=category, date_from=date_from, date_to=date_to)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "date", "type", "category", "amount", "notes", "created_by", "created_at"])
+    for t in rows:
+        writer.writerow([t.id, t.date, t.type.value, t.category, t.amount, t.notes or "", t.created_by, t.created_at])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=transactions.csv"},
+    )
 
 
 @router.get("", response_model=PaginatedTransactions)
