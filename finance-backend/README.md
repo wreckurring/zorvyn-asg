@@ -5,8 +5,6 @@ A production-grade finance dashboard backend with **role-based access control**,
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
-![Tests](https://img.shields.io/badge/tests-93%20passing-brightgreen)
-![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ---
 
@@ -26,37 +24,11 @@ amount > mean + (z_threshold × std_dev)
 
 The threshold is tunable via `?z_threshold` (default `2.0`, range `1.0–4.0`). Results are sorted by z-score descending and include `category_avg` and `category_std` so consumers understand exactly *why* a transaction was flagged.
 
-**Example response:**
-```json
-[
-  {
-    "transaction_id": 47,
-    "date": "2024-03-15",
-    "category": "Groceries",
-    "type": "expense",
-    "amount": 1850.00,
-    "category_avg": 320.50,
-    "category_std": 45.20,
-    "z_score": 3.38
-  }
-]
-```
-
 ---
 
 ### 2. Financial Insights Engine — `GET /dashboard/insights`
 
 Synthesizes multiple data points into a **single actionable snapshot** without requiring multiple round-trips.
-
-| Field | What it measures |
-|---|---|
-| `savings_rate_pct` | `(net_balance / total_income) × 100` |
-| `top_expense_category` | Category with highest total spend |
-| `month_over_month_expense_change_pct` | % change vs previous calendar month |
-| `current_month_net` | Income minus expenses for the current month |
-| `avg_daily_expense` | Total expenses ÷ distinct days with transactions |
-| `avg_transaction_amount` | Mean transaction value across all records |
-| `largest_transaction_id` / `largest_transaction_amount` | Quick pointer to the biggest single transaction |
 
 ---
 
@@ -65,29 +37,6 @@ Synthesizes multiple data points into a **single actionable snapshot** without r
 Full CRUD for monthly per-category budgets. The `category + month` combination is unique-constrained at the database level.
 
 `GET /dashboard/budget-status?month=2024-01` merges budgets against actual spend and returns:
-
-```json
-[
-  {
-    "category": "Rent",
-    "month": "2024-01",
-    "budget": 3500.00,
-    "actual": 3200.00,
-    "variance": 300.00,
-    "utilization_pct": 91.4,
-    "status": "under_budget"
-  },
-  {
-    "category": "Dining",
-    "month": "2024-01",
-    "budget": 0.0,
-    "actual": 640.00,
-    "variance": -640.00,
-    "utilization_pct": 0.0,
-    "status": "no_budget"
-  }
-]
-```
 
 `status` is one of `under_budget`, `over_budget`, or `no_budget` (money spent but no limit set).
 
@@ -129,68 +78,47 @@ Uses FastAPI's `StreamingResponse` to stream a filtered CSV directly without buf
 ```
 finance-backend/
 ├── app/
-│   ├── main.py                   # App entry, middleware, exception handlers
-│   ├── config.py                 # Settings loaded from .env
-│   ├── database.py               # Engine, session, Base
-│   ├── limiter.py                # Rate limiter instance
+│   ├── main.py                  
+│   ├── config.py                
+│   ├── database.py               
+│   ├── limiter.py                
 │   ├── models/
-│   │   ├── user.py               # User, UserRole enum
-│   │   ├── transaction.py        # Transaction, TransactionType enum
-│   │   ├── audit_log.py          # AuditLog, AuditAction enum
-│   │   └── budget.py             # Budget (category + month limits)
+│   │   ├── user.py               
+│   │   ├── transaction.py        
+│   │   ├── audit_log.py          
+│   │   └── budget.py             
 │   ├── schemas/
-│   │   ├── auth.py               # LoginRequest, TokenResponse, RefreshRequest
-│   │   ├── user.py               # UserCreate, UserResponse, UserProfileUpdate
-│   │   ├── transaction.py        # TransactionCreate/Update/Response, PaginatedTransactions
-│   │   ├── dashboard.py          # SummaryResponse, AnomalyRecord, InsightsResponse, ...
-│   │   ├── budget.py             # BudgetCreate, BudgetResponse, BudgetStatus
-│   │   └── audit.py              # AuditLogResponse, PaginatedAuditLogs
+│   │   ├── auth.py               
+│   │   ├── user.py               
+│   │   ├── transaction.py        
+│   │   ├── dashboard.py          
+│   │   ├── budget.py             
+│   │   └── audit.py              
 │   ├── routers/
-│   │   ├── auth.py               # register, login, refresh, logout, me, update me
-│   │   ├── users.py              # user CRUD + role/status management
-│   │   ├── transactions.py       # transaction CRUD + stats + export
-│   │   ├── dashboard.py          # summary, trends, anomalies, insights, budget-status
-│   │   ├── budgets.py            # budget CRUD
-│   │   └── audit.py              # audit log query
+│   │   ├── auth.py               
+│   │   ├── users.py              
+│   │   ├── transactions.py       
+│   │   ├── dashboard.py         
+│   │   ├── budgets.py            
+│   │   └── audit.py             
 │   ├── services/
-│   │   ├── auth_service.py       # JWT creation/decoding, password hashing
-│   │   ├── user_service.py       # user queries and updates
-│   │   ├── transaction_service.py # transaction queries, stats, export
-│   │   ├── dashboard_service.py  # aggregations, anomaly detection, insights
-│   │   ├── budget_service.py     # budget CRUD and variance calculation
-│   │   └── audit_service.py      # audit log write and query
+│   │   ├── auth_service.py       
+│   │   ├── user_service.py       
+│   │   ├── transaction_service.py
+│   │   ├── dashboard_service.py  
+│   │   ├── budget_service.py     
+│   │   └── audit_service.py     
 │   └── middleware/
 │       ├── access_control.py     # get_current_user, require_roles factory
 │       └── logging.py            # Request ID + timing middleware
 ├── alembic/
 │   └── versions/
-│       ├── 69ce38c3_initial_schema.py
-│       ├── 69cedc89_add_audit_logs.py
-│       ├── 69cf53e4_add_performance_indexes.py
-│       └── 69cf6103_add_budgets.py
 ├── tests/
-│   ├── conftest.py               # Test DB setup, shared helpers
-│   ├── test_auth.py
-│   ├── test_rbac.py
-│   ├── test_transactions.py
-│   ├── test_users.py
-│   ├── test_dashboard.py
-│   ├── test_profile.py
-│   ├── test_export.py
-│   ├── test_stats.py
-│   ├── test_audit.py
-│   ├── test_categories.py
-│   ├── test_budgets.py
-│   ├── test_refresh_token.py
-│   └── test_anomalies_insights.py
 ├── Dockerfile
-├── docker-compose.yml
 ├── alembic.ini
 ├── seed.py
 ├── pytest.ini
-├── requirements.txt
-├── .env.example
-└── .dockerignore
+└── requirements.txt
 ```
 
 ---
