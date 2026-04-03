@@ -117,6 +117,14 @@ This creates three users and 15 transactions across 3 months:
 uvicorn app.main:app --reload
 ```
 
+### Alternative: run everything with Docker
+
+```bash
+docker-compose up --build
+```
+
+Starts PostgreSQL and the API together. Migrations run automatically on startup.
+
 API docs available at: `http://localhost:8000/docs`
 
 ---
@@ -128,7 +136,9 @@ API docs available at: `http://localhost:8000/docs`
 | Method | Endpoint | Description |
 |---|---|---|
 | POST | `/auth/register` | Register a new user (rate limited: 10/min) |
-| POST | `/auth/login` | Login and receive JWT (rate limited: 20/min) |
+| POST | `/auth/login` | Login — returns `access_token` + `refresh_token` (rate limited: 20/min) |
+| POST | `/auth/refresh` | Issue new token pair from a valid refresh token |
+| POST | `/auth/logout` | Logout (client must discard tokens) |
 | GET | `/auth/me` | Get current user profile |
 | PATCH | `/auth/me` | Update own email or password |
 
@@ -147,6 +157,7 @@ API docs available at: `http://localhost:8000/docs`
 | Method | Endpoint | Description | Roles |
 |---|---|---|---|
 | GET | `/transactions` | List transactions (filterable, paginated) | All |
+| GET | `/transactions/stats` | Aggregates per category (count, total, avg, min, max) | All |
 | GET | `/transactions/export` | Download filtered transactions as CSV | All |
 | GET | `/transactions/{id}` | Get a single transaction | All |
 | POST | `/transactions` | Create a transaction | Analyst, Admin |

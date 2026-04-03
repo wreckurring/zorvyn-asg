@@ -1,5 +1,6 @@
 from datetime import date
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.transaction import Transaction, TransactionType
@@ -38,6 +39,46 @@ def get_transactions(
     total = query.count()
     results = query.order_by(Transaction.date.desc()).offset(skip).limit(limit).all()
     return total, results
+
+
+def get_transaction_stats(
+    db: Session,
+    type: TransactionType | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> list[dict]:
+    query = (
+        db.query(
+            Transaction.category,
+            Transaction.type,
+            func.count(Transaction.id).label("count"),
+            func.sum(Transaction.amount).label("total"),
+            func.avg(Transaction.amount).label("avg"),
+            func.min(Transaction.amount).label("min"),
+            func.max(Transaction.amount).label("max"),
+        )
+        .filter(Transaction.is_deleted == False)
+    )
+    if type:
+        query = query.filter(Transaction.type == type)
+    if date_from:
+        query = query.filter(Transaction.date >= date_from)
+    if date_to:
+        query = query.filter(Transaction.date <= date_to)
+
+    rows = query.group_by(Transaction.category, Transaction.type).order_by(Transaction.category).all()
+    return [
+        {
+            "category": r.category,
+            "type": r.type,
+            "count": r.count,
+            "total": round(r.total, 2),
+            "avg": round(r.avg, 2),
+            "min": r.min,
+            "max": r.max,
+        }
+        for r in rows
+    ]
 
 
 def get_all_transactions_for_export(

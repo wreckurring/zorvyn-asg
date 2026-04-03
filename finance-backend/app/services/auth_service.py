@@ -9,6 +9,9 @@ from app.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+_TOKEN_TYPE_ACCESS = "access"
+_TOKEN_TYPE_REFRESH = "refresh"
+
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
@@ -20,14 +23,38 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_access_token(data: dict) -> str:
     payload = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
-    payload.update({"exp": expire})
+    payload.update({
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes),
+        "type": _TOKEN_TYPE_ACCESS,
+    })
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+
+
+def create_refresh_token(data: dict) -> str:
+    payload = data.copy()
+    payload.update({
+        "exp": datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days),
+        "type": _TOKEN_TYPE_REFRESH,
+    })
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
 def decode_access_token(token: str) -> dict:
     try:
-        return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        if payload.get("type") != _TOKEN_TYPE_ACCESS:
+            return {}
+        return payload
+    except JWTError:
+        return {}
+
+
+def decode_refresh_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        if payload.get("type") != _TOKEN_TYPE_REFRESH:
+            return {}
+        return payload
     except JWTError:
         return {}
 

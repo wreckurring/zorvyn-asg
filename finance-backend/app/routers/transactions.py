@@ -22,6 +22,7 @@ from app.services.transaction_service import (
     create_transaction,
     get_all_transactions_for_export,
     get_transaction_by_id,
+    get_transaction_stats,
     get_transactions,
     soft_delete_transaction,
     update_transaction,
@@ -59,6 +60,22 @@ def export_csv(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=transactions.csv"},
     )
+
+
+@router.get("/stats")
+def stats(
+    type: TransactionType | None = Query(None),
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_any_role),
+):
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="date_from must not be after date_to",
+        )
+    return get_transaction_stats(db, type=type, date_from=date_from, date_to=date_to)
 
 
 @router.get("", response_model=PaginatedTransactions)

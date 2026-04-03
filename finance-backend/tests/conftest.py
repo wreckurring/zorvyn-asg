@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 os.environ.setdefault("DATABASE_URL", "postgresql://finance_user:finance_pass@localhost:5432/finance_test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
+os.environ.setdefault("REFRESH_TOKEN_EXPIRE_DAYS", "7")
 
 from app.database import Base, get_db
 from app.main import app
@@ -38,12 +39,19 @@ def override_get_db():
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_db():
+    Base.metadata.drop_all(bind=engine)
+    with engine.connect() as conn:
+        conn.execute(text("DROP TYPE IF EXISTS userrole CASCADE"))
+        conn.execute(text("DROP TYPE IF EXISTS transactiontype CASCADE"))
+        conn.execute(text("DROP TYPE IF EXISTS auditaction CASCADE"))
+        conn.commit()
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
     with engine.connect() as conn:
         conn.execute(text("DROP TYPE IF EXISTS userrole CASCADE"))
         conn.execute(text("DROP TYPE IF EXISTS transactiontype CASCADE"))
+        conn.execute(text("DROP TYPE IF EXISTS auditaction CASCADE"))
         conn.commit()
 
 
