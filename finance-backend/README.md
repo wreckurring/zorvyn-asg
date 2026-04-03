@@ -169,10 +169,17 @@ API docs available at: `http://localhost:8000/docs`
 | Method | Endpoint | Description | Roles |
 |---|---|---|---|
 | GET | `/dashboard/summary` | Total income, expenses, net balance (supports `?date_from` / `?date_to`) | All |
-| GET | `/dashboard/by-category` | Totals grouped by category | All |
+| GET | `/dashboard/by-category` | Totals grouped by category (supports date range) | All |
+| GET | `/dashboard/categories` | Distinct categories in use (supports `?type`) | All |
 | GET | `/dashboard/trends/monthly` | Monthly income vs expense breakdown | All |
 | GET | `/dashboard/trends/weekly` | Weekly income vs expense breakdown | All |
 | GET | `/dashboard/recent` | Last N transactions (`?limit=10`) | All |
+
+### Audit Logs (Admin only)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/audit-logs` | Paginated log of all create/update/delete actions (filterable by `resource_type`, `user_id`) |
 
 ---
 

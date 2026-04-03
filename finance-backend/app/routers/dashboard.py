@@ -5,10 +5,12 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.middleware.access_control import require_any_role
+from app.models.transaction import TransactionType
 from app.models.user import User
 from app.schemas.transaction import TransactionResponse
 from app.services.dashboard_service import (
     get_by_category,
+    get_categories,
     get_monthly_trends,
     get_recent_transactions,
     get_summary,
@@ -35,10 +37,26 @@ def summary(
 
 @router.get("/by-category")
 def by_category(
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
     db: Session = Depends(get_db),
     _: User = Depends(require_any_role),
 ):
-    return get_by_category(db)
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="date_from must not be after date_to",
+        )
+    return get_by_category(db, date_from=date_from, date_to=date_to)
+
+
+@router.get("/categories")
+def categories(
+    type: TransactionType | None = Query(None),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_any_role),
+):
+    return get_categories(db, type=type)
 
 
 @router.get("/trends/monthly")

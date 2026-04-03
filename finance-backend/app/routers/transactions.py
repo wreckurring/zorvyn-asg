@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.middleware.access_control import require_admin, require_analyst_or_admin, require_any_role
+from app.models.audit_log import AuditAction
 from app.models.transaction import TransactionType
 from app.models.user import User
 from app.schemas.transaction import (
@@ -16,6 +17,7 @@ from app.schemas.transaction import (
     TransactionResponse,
     TransactionUpdate,
 )
+from app.services.audit_service import record
 from app.services.transaction_service import (
     create_transaction,
     get_all_transactions_for_export,
@@ -99,7 +101,9 @@ def create(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_analyst_or_admin),
 ):
-    return create_transaction(db, data, created_by=current_user.id)
+    txn = create_transaction(db, data, created_by=current_user.id)
+    record(db, current_user.id, AuditAction.create, "transaction", txn.id, f"category={txn.category} amount={txn.amount}")
+    return txn
 
 
 @router.put("/{transaction_id}", response_model=TransactionResponse)
@@ -107,21 +111,25 @@ def update(
     transaction_id: int,
     data: TransactionUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
 ):
     txn = get_transaction_by_id(db, transaction_id)
     if not txn:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
-    return update_transaction(db, txn, data)
+    updated = update_transaction(db, txn, data)
+    changed = ", ".join(f"{k}={v}" for k, v in data.model_dump(exclude_unset=True).items())
+    record(db, current_user.id, AuditAction.update, "transaction", transaction_id, changed)
+    return updated
 
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete(
     transaction_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
 ):
     txn = get_transaction_by_id(db, transaction_id)
     if not txn:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
     soft_delete_transaction(db, txn)
+    record(db, current_user.id, AuditAction.delete, "transaction", transaction_id)

@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import date
 from typing import Optional
 
-from sqlalchemy import func
+from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session
 
 from app.models.transaction import Transaction, TransactionType
@@ -32,16 +32,31 @@ def get_summary(
     }
 
 
-def get_by_category(db: Session) -> list[dict]:
-    rows = (
+def get_by_category(
+    db: Session,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+) -> list[dict]:
+    query = (
         db.query(Transaction.category, Transaction.type, func.sum(Transaction.amount))
         .filter(Transaction.is_deleted == False)
-        .group_by(Transaction.category, Transaction.type)
-        .order_by(Transaction.category)
-        .all()
     )
 
+    if date_from:
+        query = query.filter(Transaction.date >= date_from)
+    if date_to:
+        query = query.filter(Transaction.date <= date_to)
+
+    rows = query.group_by(Transaction.category, Transaction.type).order_by(Transaction.category).all()
     return [{"category": row[0], "type": row[1], "total": row[2]} for row in rows]
+
+
+def get_categories(db: Session, type: Optional[TransactionType] = None) -> list[str]:
+    query = db.query(distinct(Transaction.category)).filter(Transaction.is_deleted == False)
+    if type:
+        query = query.filter(Transaction.type == type)
+    rows = query.order_by(Transaction.category).all()
+    return [row[0] for row in rows]
 
 
 def _group_by_period(rows) -> list[dict]:
