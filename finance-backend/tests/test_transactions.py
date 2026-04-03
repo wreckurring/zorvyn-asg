@@ -117,3 +117,20 @@ def test_validation_error_format(client):
     body = resp.json()
     assert "errors" in body
     assert "detail" in body
+
+
+def test_created_by_me_filter(client):
+    admin_token = _admin_client(client)
+    register_user(client, "analyst", "analystpass")
+    users = client.get("/users", headers=auth_headers(admin_token)).json()
+    analyst_id = next(u["id"] for u in users if u["username"] == "analyst")
+    client.patch(f"/users/{analyst_id}/role", json={"role": "analyst"}, headers=auth_headers(admin_token))
+    analyst_token = login_user(client, "analyst", "analystpass")
+
+    client.post("/transactions", json=BASE_TXN, headers=auth_headers(admin_token))
+    client.post("/transactions", json={**BASE_TXN, "category": "Mine"}, headers=auth_headers(analyst_token))
+
+    resp = client.get("/transactions?created_by_me=true", headers=auth_headers(analyst_token))
+    body = resp.json()
+    assert body["total"] == 1
+    assert body["results"][0]["category"] == "Mine"

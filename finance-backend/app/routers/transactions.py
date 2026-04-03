@@ -11,6 +11,7 @@ from app.middleware.access_control import require_admin, require_analyst_or_admi
 from app.models.audit_log import AuditAction
 from app.models.transaction import TransactionType
 from app.models.user import User
+from app.schemas.dashboard import TransactionStat
 from app.schemas.transaction import (
     PaginatedTransactions,
     TransactionCreate,
@@ -37,16 +38,17 @@ def export_csv(
     category: str | None = Query(None),
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
+    created_by_me: bool = Query(False),
     db: Session = Depends(get_db),
-    _: User = Depends(require_any_role),
+    current_user: User = Depends(require_any_role),
 ):
     if date_from and date_to and date_from > date_to:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="date_from must not be after date_to",
         )
-
-    rows = get_all_transactions_for_export(db, type=type, category=category, date_from=date_from, date_to=date_to)
+    created_by = current_user.id if created_by_me else None
+    rows = get_all_transactions_for_export(db, type=type, category=category, date_from=date_from, date_to=date_to, created_by=created_by)
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -62,7 +64,7 @@ def export_csv(
     )
 
 
-@router.get("/stats")
+@router.get("/stats", response_model=list[TransactionStat])
 def stats(
     type: TransactionType | None = Query(None),
     date_from: date | None = Query(None),
@@ -84,6 +86,7 @@ def list_transactions(
     category: str | None = Query(None),
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
+    created_by_me: bool = Query(False),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -94,8 +97,10 @@ def list_transactions(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="date_from must not be after date_to",
         )
+    created_by = current_user.id if created_by_me else None
     total, results = get_transactions(
-        db, type=type, category=category, date_from=date_from, date_to=date_to, skip=skip, limit=limit
+        db, type=type, category=category, date_from=date_from, date_to=date_to,
+        created_by=created_by, skip=skip, limit=limit,
     )
     return PaginatedTransactions(total=total, skip=skip, limit=limit, results=results)
 

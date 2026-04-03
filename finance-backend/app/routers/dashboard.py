@@ -7,6 +7,7 @@ from app.database import get_db
 from app.middleware.access_control import require_any_role
 from app.models.transaction import TransactionType
 from app.models.user import User
+from app.schemas.dashboard import CategoryBreakdown, SummaryResponse, TrendPeriod
 from app.schemas.transaction import TransactionResponse
 from app.services.dashboard_service import (
     get_by_category,
@@ -20,7 +21,7 @@ from app.services.dashboard_service import (
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
-@router.get("/summary")
+@router.get("/summary", response_model=SummaryResponse)
 def summary(
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
@@ -35,7 +36,7 @@ def summary(
     return get_summary(db, date_from=date_from, date_to=date_to)
 
 
-@router.get("/by-category")
+@router.get("/by-category", response_model=list[CategoryBreakdown])
 def by_category(
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
@@ -50,7 +51,7 @@ def by_category(
     return get_by_category(db, date_from=date_from, date_to=date_to)
 
 
-@router.get("/categories")
+@router.get("/categories", response_model=list[str])
 def categories(
     type: TransactionType | None = Query(None),
     db: Session = Depends(get_db),
@@ -59,7 +60,7 @@ def categories(
     return get_categories(db, type=type)
 
 
-@router.get("/trends/monthly")
+@router.get("/trends/monthly", response_model=list[TrendPeriod])
 def monthly_trends(
     db: Session = Depends(get_db),
     _: User = Depends(require_any_role),
@@ -67,7 +68,7 @@ def monthly_trends(
     return get_monthly_trends(db)
 
 
-@router.get("/trends/weekly")
+@router.get("/trends/weekly", response_model=list[TrendPeriod])
 def weekly_trends(
     db: Session = Depends(get_db),
     _: User = Depends(require_any_role),

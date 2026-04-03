@@ -13,6 +13,7 @@ def _build_transaction_query(
     category: str | None,
     date_from: date | None,
     date_to: date | None,
+    created_by: int | None = None,
 ):
     query = db.query(Transaction).filter(Transaction.is_deleted == False)
     if type:
@@ -23,6 +24,8 @@ def _build_transaction_query(
         query = query.filter(Transaction.date >= date_from)
     if date_to:
         query = query.filter(Transaction.date <= date_to)
+    if created_by:
+        query = query.filter(Transaction.created_by == created_by)
     return query
 
 
@@ -32,10 +35,11 @@ def get_transactions(
     category: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    created_by: int | None = None,
     skip: int = 0,
     limit: int = 50,
 ) -> tuple[int, list[Transaction]]:
-    query = _build_transaction_query(db, type, category, date_from, date_to)
+    query = _build_transaction_query(db, type, category, date_from, date_to, created_by=created_by)
     total = query.count()
     results = query.order_by(Transaction.date.desc()).offset(skip).limit(limit).all()
     return total, results
@@ -87,9 +91,10 @@ def get_all_transactions_for_export(
     category: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    created_by: int | None = None,
 ) -> list[Transaction]:
     return (
-        _build_transaction_query(db, type, category, date_from, date_to)
+        _build_transaction_query(db, type, category, date_from, date_to, created_by=created_by)
         .order_by(Transaction.date.desc())
         .all()
     )
