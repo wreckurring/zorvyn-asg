@@ -177,18 +177,6 @@ Creates 3 users and 15 transactions across Jan–Mar 2024:
 
 ---
 
-## Environment Variables
-
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
-| `SECRET_KEY` | Yes | — | JWT signing secret (use a long random string in production) |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | No | `60` | Access token TTL |
-| `REFRESH_TOKEN_EXPIRE_DAYS` | No | `7` | Refresh token TTL |
-| `ALGORITHM` | No | `HS256` | JWT algorithm |
-
----
-
 ### Users *(Admin only)*
 
 | Method | Endpoint | Description |
