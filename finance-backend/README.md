@@ -8,6 +8,30 @@ A production-grade finance dashboard backend with **role-based access control**,
 
 ---
 
+## API Documentation
+
+FastAPI auto-generates fully interactive API docs from the code — no separate documentation step needed.
+
+| Interface | URL | Description |
+|---|---|---|
+| Swagger UI | `http://localhost:8000/docs` | Interactive — try every endpoint directly in the browser |
+| ReDoc | `http://localhost:8000/redoc` | Clean read-only reference |
+| OpenAPI JSON | `http://localhost:8000/openapi.json` | Machine-readable schema |
+
+### Try it instantly (no setup)
+
+```bash
+docker-compose up --build
+# then open http://localhost:8000/docs
+```
+
+Use the seed credentials to log in via the `/auth/login` endpoint in Swagger, copy the `access_token`, click **Authorize** (top right), and every protected endpoint becomes testable from the browser.
+
+> **Deployment note:** To get a public URL, this project is Railway-ready.
+> Push to GitHub → connect repo at [railway.app](https://railway.app) → add a PostgreSQL plugin → set the three env vars (`DATABASE_URL`, `SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`) → deploy. The startup command in `docker-compose.yml` (`alembic upgrade head && uvicorn ...`) works as-is.
+
+---
+
 ## Innovative Features
 
 These go beyond standard CRUD and are what set this implementation apart.
