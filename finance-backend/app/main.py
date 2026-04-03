@@ -10,7 +10,7 @@ from app.config import settings
 from app.database import SessionLocal
 from app.limiter import limiter
 from app.middleware.logging import RequestLoggingMiddleware
-from app.routers import audit, auth, dashboard, transactions, users
+from app.routers import audit, auth, budgets, dashboard, transactions, users
 
 app = FastAPI(
     title=settings.app_name,
@@ -35,6 +35,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(transactions.router)
 app.include_router(dashboard.router)
+app.include_router(budgets.router)
 app.include_router(audit.router)
 
 

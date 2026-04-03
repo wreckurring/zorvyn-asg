@@ -4,6 +4,37 @@ A role-based finance dashboard backend built with **FastAPI**, **PostgreSQL**, a
 
 ---
 
+## Innovative Features
+
+These go beyond standard CRUD and are what differentiate this implementation:
+
+### 1. Statistical Anomaly Detection — `GET /dashboard/anomalies`
+Flags transactions that are statistical outliers within their category using **z-score analysis**. For any category with 3+ transactions, computes mean and standard deviation, then surfaces transactions where `amount > mean + N * std_dev`. The threshold `N` is configurable (`?z_threshold=2.0` by default). Each result includes `z_score`, `category_avg`, and `category_std` so consumers can understand why it was flagged.
+
+### 2. Financial Insights Engine — `GET /dashboard/insights`
+Synthesizes multiple data points into a single actionable snapshot:
+- **Savings rate** — `(net_balance / total_income) * 100`
+- **Month-over-month expense change** — compares current vs previous calendar month
+- **Top expense category** — where the most money is going
+- **Average daily spend** — total expenses divided by distinct days with transactions
+- **Largest transaction** — id + amount for quick drill-down
+
+### 3. Budget Management with Variance Tracking — `/budgets` + `GET /dashboard/budget-status`
+Full CRUD for monthly budgets per category (unique constraint on `category + month`). The `/dashboard/budget-status?month=YYYY-MM` endpoint merges budget limits against actual spend and returns per-category:
+- `budget` — the set limit
+- `actual` — real spend that month
+- `variance` — how much is left (negative = over)
+- `utilization_pct` — percentage of budget consumed
+- `status` — `under_budget`, `over_budget`, or `no_budget` (spent but no limit set)
+
+### 4. Audit Trail — `GET /audit-logs`
+Every transaction create, update, and delete is logged with the acting user, resource ID, and a human-readable `details` string (e.g., `amount=2500.0`). Queryable by `resource_type` and `user_id`. Critical for any real finance system — demonstrates awareness of compliance and auditability requirements.
+
+### 5. CSV Export with Filters — `GET /transactions/export`
+Streams a filtered CSV of transactions using FastAPI's `StreamingResponse`. Accepts all the same filters as the list endpoint (`type`, `category`, `date_from`, `date_to`, `created_by_me`). No memory spike for large exports.
+
+---
+
 ## Tech Stack
 
 | Layer | Choice |
@@ -185,6 +216,23 @@ API docs available at: `http://localhost:8000/docs`
 | GET | `/dashboard/trends/monthly` | Monthly income vs expense breakdown | All |
 | GET | `/dashboard/trends/weekly` | Weekly income vs expense breakdown | All |
 | GET | `/dashboard/recent` | Last N transactions (`?limit=10`) | All |
+
+### Budgets
+
+| Method | Endpoint | Description | Roles |
+|---|---|---|---|
+| GET | `/budgets` | List budgets (filterable by `?month`) | All |
+| POST | `/budgets` | Create a monthly budget for a category | Analyst, Admin |
+| PATCH | `/budgets/{id}` | Update budget limit | Admin |
+| DELETE | `/budgets/{id}` | Delete a budget | Admin |
+| GET | `/dashboard/budget-status` | Actual vs budget per category for a month | All |
+
+### Analytics (Innovative)
+
+| Method | Endpoint | Description | Roles |
+|---|---|---|---|
+| GET | `/dashboard/anomalies` | Statistical outlier detection per category (`?z_threshold=2.0`) | All |
+| GET | `/dashboard/insights` | Savings rate, MoM change, top category, avg daily spend | All |
 
 ### Audit Logs (Admin only)
 
