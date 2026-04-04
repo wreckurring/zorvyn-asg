@@ -153,7 +153,7 @@ cp .env.example .env
 docker-compose up --build
 ```
 
-That's it. Docker Compose starts PostgreSQL, waits for it to be healthy, runs Alembic migrations, then starts the API.
+Docker Compose starts PostgreSQL, waits for it to be healthy, runs Alembic migrations, then starts the API.
 
 **API:** `http://localhost:8000`
 **Docs:** `http://localhost:8000/docs`
@@ -269,9 +269,6 @@ ACID compliance matters for financial data. PostgreSQL also gives us `stddev_pop
 
 **Why soft delete**
 Transactions are never hard-deleted. `is_deleted = true` hides them from all queries but keeps the audit trail intact. Deleting financial records is a compliance risk.
-
-**Why Alembic over `create_all`**
-`create_all` on startup is fine for prototypes but makes it impossible to evolve the schema safely in production. Every schema change here is a versioned, reversible migration.
 
 **Why dependency-injected role guards**
 `require_roles(UserRole.admin)` is declared once and injected per route. This means RBAC enforcement is visible at the route definition, testable in isolation, and cannot be accidentally bypassed by forgetting an `if` check inside a handler.
