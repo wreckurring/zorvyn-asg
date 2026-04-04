@@ -27,9 +27,6 @@ docker-compose up --build
 
 Use the seed credentials to log in via the `/auth/login` endpoint in Swagger, copy the `access_token`, click **Authorize** (top right), and every protected endpoint becomes testable from the browser.
 
-> **Deployment note:** To get a public URL, this project is Railway-ready.
-> Push to GitHub → connect repo at [railway.app](https://railway.app) → add a PostgreSQL plugin → set the three env vars (`DATABASE_URL`, `SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`) → deploy. The startup command in `docker-compose.yml` (`alembic upgrade head && uvicorn ...`) works as-is.
-
 ---
 
 ## Innovative Features
