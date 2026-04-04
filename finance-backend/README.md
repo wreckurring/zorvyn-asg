@@ -87,13 +87,11 @@ Uses FastAPI's `StreamingResponse` to stream a filtered CSV directly without buf
 | Framework | FastAPI 0.111 | Auto-generates OpenAPI docs, Pydantic validation, async-ready |
 | Database | PostgreSQL 16 | ACID compliance, window functions, production standard |
 | ORM | SQLAlchemy 2.0 | Type-safe mapped columns, connection pooling |
-| Migrations | Alembic | Versioned, reversible schema changes |
 | Auth | JWT via python-jose | Stateless, access + refresh token pair |
 | Password hashing | passlib/bcrypt | Industry standard |
 | Validation | Pydantic v2 | Request/response contracts enforced at the boundary |
 | Rate limiting | slowapi | Protects auth endpoints from brute force |
 | Testing | pytest + httpx | Integration tests against real PostgreSQL |
-| Containers | Docker + Compose | One-command local setup |
 
 ---
 
