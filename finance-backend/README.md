@@ -133,11 +133,7 @@ finance-backend/
 │   └── middleware/
 │       ├── access_control.py     # get_current_user, require_roles factory
 │       └── logging.py            # Request ID + timing middleware
-├── alembic/
-│   └── versions/
 ├── tests/
-├── Dockerfile
-├── alembic.ini
 ├── seed.py
 ├── pytest.ini
 └── requirements.txt
